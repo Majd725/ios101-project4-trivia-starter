@@ -18,22 +18,82 @@ class TriviaViewController: UIViewController {
   @IBOutlet weak var answerButton2: UIButton!
   @IBOutlet weak var answerButton3: UIButton!
   
-  private var questions = [TriviaQuestion]()
+    private var questions = [apiQuestion]()
   private var currQuestionIndex = 0
   private var numCorrectQuestions = 0
   
+    
+    
+    struct apiResponse: Codable{
+        let results: [apiQuestion]
+    }
+    
+    struct apiQuestion: Codable{
+        let category: String
+        let question: String
+        let correctAnswer: String
+        let incorrectAnswers: [String]
+        
+        enum CodingKeys: String, CodingKey{
+            case category
+            case question
+            case correctAnswer = "correct_answer"
+            case incorrectAnswers = "incorrect_answers"
+        }
+    }
+    
+    
   override func viewDidLoad() {
     super.viewDidLoad()
     addGradient()
     questionContainerView.layer.cornerRadius = 8.0
     // TODO: FETCH TRIVIA QUESTIONS HERE
+      let myUrl : URL = URL(string: "https://opentdb.com/api.php?amount=10&type=multiple")!
+      URLSession.shared.dataTask(with: myUrl){
+          data, _, _ in
+          
+          do{
+              let jsonDecoder: JSONDecoder = JSONDecoder()
+              let response =  try jsonDecoder.decode(apiResponse.self, from: data!)
+              print(response.results)
+              print("HI")
+              self.questions = response.results
+          }catch{
+              print(error)
+          }
+          
+          DispatchQueue.main.async{
+              self.updateQuestion(withQuestionIndex: 0)
+          }
+          
+      }.resume()
+      
+      
+      
   }
   
+    private func decodeHTMLEntities(_ string: String) -> String {
+        let entityMap = [
+            "&quot;": "\"",
+            "&amp;": "&",
+            "&lt;": "<",
+            "&gt;": ">",
+            "&apos;": "'",
+            "&#39;": "'"
+        ]
+        
+        var result = string
+        for (entity, character) in entityMap {
+            result = result.replacingOccurrences(of: entity, with: character)
+        }
+        return result
+    }
+    
   private func updateQuestion(withQuestionIndex questionIndex: Int) {
     currentQuestionNumberLabel.text = "Question: \(questionIndex + 1)/\(questions.count)"
     let question = questions[questionIndex]
-    questionLabel.text = question.question
-    categoryLabel.text = question.category
+      questionLabel.text = decodeHTMLEntities(question.question)
+      categoryLabel.text = decodeHTMLEntities( question.category)
     let answers = ([question.correctAnswer] + question.incorrectAnswers).shuffled()
     if answers.count > 0 {
       answerButton0.setTitle(answers[0], for: .normal)
