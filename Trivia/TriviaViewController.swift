@@ -55,8 +55,6 @@ class TriviaViewController: UIViewController {
           do{
               let jsonDecoder: JSONDecoder = JSONDecoder()
               let response =  try jsonDecoder.decode(apiResponse.self, from: data!)
-              print(response.results)
-              print("HI")
               self.questions = response.results
           }catch{
               print(error)
@@ -135,12 +133,37 @@ class TriviaViewController: UIViewController {
     let resetAction = UIAlertAction(title: "Restart", style: .default) { [unowned self] _ in
       currQuestionIndex = 0
       numCorrectQuestions = 0
-      updateQuestion(withQuestionIndex: currQuestionIndex)
+        
+        getNewQuestions()
     }
     alertController.addAction(resetAction)
     present(alertController, animated: true, completion: nil)
   }
   
+    
+    
+    private func getNewQuestions(){
+        let myUrl : URL = URL(string: "https://opentdb.com/api.php?amount=10&type=multiple")!
+        URLSession.shared.dataTask(with: myUrl){
+            data, _, _ in
+            
+            do{
+                let jsonDecoder: JSONDecoder = JSONDecoder()
+                let response =  try jsonDecoder.decode(apiResponse.self, from: data!)
+                print(response.results)
+                print("HI")
+                self.questions = response.results
+            }catch{
+                print(error)
+            }
+            
+            DispatchQueue.main.async{
+                self.updateQuestion(withQuestionIndex: 0)
+            }
+            
+        }.resume()
+    }
+    
   private func addGradient() {
     let gradientLayer = CAGradientLayer()
     gradientLayer.frame = view.bounds
